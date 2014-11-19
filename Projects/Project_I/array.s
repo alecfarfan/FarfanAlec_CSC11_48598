@@ -5,12 +5,13 @@ a: .skip 64
 headline: .asciz "A B C D E F G H \n"
 header: .asciz "   | A | B | C | D | E | F | G | H |\n"
 border: .asciz "___|___|___|___|___|___|___|___|___|\n"
-format: .asciz "%c"
+format: .asciz "%s"
 format2: .asciz " %c |"
 format3: .asciz "%c"
 formatd: .asciz "%d  |"
 endl: .asciz "\n"
-choicePrompt: .asciz "Enter the letter/number coordinate to select a gamepiece:"
+choicePrompt1: .asciz "Enter the letter/number coordinate to select a gamepiece:"
+choicePrompt2: .asciz "Enter the letter/number coordinate to move to that square:"
 choice: .word 0
 
 .text
@@ -61,9 +62,11 @@ swap:
 
 	POP {LR}
 	BX LR
+
 fillW:
 	MOV R5, #0
 	MOV R6, #0
+
 fillLoopW:
 	CMP R5, #16
 	BEQ fillB
@@ -76,15 +79,18 @@ fillLoopW:
 
 	ADD R5, R5, #1
 	BAL fillLoopW
+
 changeW:
 	mov r7, #'o'
 	ADD R6, R4, R5
 	STRB R7, [R6]
 	ADD R5, R5, #1
 	BAL fillLoopW
+
 fillB:
 	MOV R5, #48
 	MOV R6, #0
+
 fillLoopB:
 	CMP R5, #64
 	BEQ end
@@ -97,6 +103,7 @@ fillLoopB:
 
 	ADD R5, R5, #1
 	BAL fillLoopB
+
 changeB:
 	mov r7, #'*'
 	ADD R6, R4, R5
@@ -216,20 +223,52 @@ rowNum:
 
 	POP {LR}
 	BX LR
+
 /* End of print subroutine */
 
 /* Beginning of prompt subroutine */
 prompt:
 	PUSH {LR}
 
-	LDR R0, address_choicePrompt
+	LDR R0, address_choicePrompt1
 	BL printf
 	LDR R0, address_format
 	LDR R1, address_choice
 	BL scanf
+	BL getIndex
+
+	LDR R0, address_choicePrompt2
+	BL printf
+	LDR R0, address_format
+	LDR R1, address_choice
+	BL scanf
+	BL getIndex
 
 	POP {LR}
 	BX LR
+
+getIndex:
+	PUSH {LR}
+
+	LDR R2, address_choice
+	LDRB R3, [R2,#0]
+	LDRB R4, [R2,#1]
+	
+	CMP R3, #96
+	SUBGT R3, R3, #97
+	SUBLT R3, R3, #65
+	SUB R4, R4, #49
+	MOV R5, #8
+	MUL R1, R4, R5
+	ADD R1, R1, R3
+
+	LDR R0, address_formatd
+	BL printf
+
+	POP {LR}
+	BX LR
+
+/* End of prompt subroutine */
 
 end:
 	POP {LR}
@@ -245,5 +284,6 @@ address_format: .word format
 address_format2: .word format2
 address_format3: .word format3
 address_formatd: .word formatd
-address_choicePrompt: .word choicePrompt
+address_choicePrompt1: .word choicePrompt1
+address_choicePrompt2: .word choicePrompt2
 address_choice: .word choice
