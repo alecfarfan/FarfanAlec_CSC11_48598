@@ -2,7 +2,7 @@
 
 .data
 a: .skip 64
-headline: .asciz "A B C D E F G H \n"
+h: .asciz "--------\n"
 header: .asciz "   | A | B | C | D | E | F | G | H |\n"
 border: .asciz "___|___|___|___|___|___|___|___|___|\n"
 format: .asciz "%s"
@@ -18,16 +18,20 @@ choice: .word 0
 
 .global main
 main:
-
 	PUSH {LR}
 
 	LDR R4, address_a
 	MOV R5, #0
 	MOV R8, #'+'
 	MOV R9, #'-'
+	MOV R11, #6
+	MOV R12, #6
+
 	BL makeBoard
 	BL print
 	BL prompt
+	BL update
+	BL print
 
 	POP {LR}
 	BX LR
@@ -236,6 +240,7 @@ prompt:
 	LDR R1, address_choice
 	BL scanf
 	BL getIndex
+	PUSH {R0}
 
 	LDR R0, address_choicePrompt2
 	BL printf
@@ -243,6 +248,8 @@ prompt:
 	LDR R1, address_choice
 	BL scanf
 	BL getIndex
+	MOV R1, R0
+	POP {R0}
 
 	POP {LR}
 	BX LR
@@ -250,33 +257,51 @@ prompt:
 getIndex:
 	PUSH {LR}
 
-	LDR R2, address_choice
-	LDRB R3, [R2,#0]
-	LDRB R4, [R2,#1]
+	LDR R1, address_choice
+	LDRB R2, [R1,#0]
+	LDRB R3, [R1,#1]
 	
-	CMP R3, #96
-	SUBGT R3, R3, #97
-	SUBLT R3, R3, #65
-	SUB R4, R4, #49
+	CMP R2, #96
+	SUBGT R2, R2, #97
+	SUBLT R2, R2, #65
+	SUB R3, R3, #49
 	MOV R5, #8
-	MUL R1, R4, R5
-	ADD R1, R1, R3
-
-	LDR R0, address_formatd
-	BL printf
+	MUL R6, R3, R5
+	ADD R6, R6, R2
+	MOV R0, R6
 
 	POP {LR}
 	BX LR
 
 /* End of prompt subroutine */
 
+/* Beginning of update subroutine */
+update:
+	PUSH {LR}
+	
+	LDR R4, address_a
+	ADD R2, R4, R0
+	LDRB R3, [R2]
+	MOV R5, R3
+
+	ADD R2, R4, R1
+	LDRB R3, [R2]
+	STRB R5, [R2]
+	ADD R2, R4, R0
+	STRB R3, [R2]
+
+	POP {LR}
+	BX LR
+
+/* End of update subroutine */
+
 end:
 	POP {LR}
 	BX LR
 
-
+/* Data addresses */
 address_a: .word a
-address_headline: .word headline
+address_headline: .word h
 address_header: .word header
 address_border: .word border
 address_endl: .word endl
