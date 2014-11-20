@@ -13,6 +13,8 @@ endl: .asciz "\n"
 choicePrompt1: .asciz "Enter the letter/number coordinate to select a gamepiece:"
 choicePrompt2: .asciz "Enter the letter/number coordinate to move to that square:"
 choice: .word 0
+player: .asciz "Player %d\n"
+invalid1: .asciz "Error. Must select one's own gamepiece\n"
 
 .text
 
@@ -26,12 +28,17 @@ main:
 	MOV R9, #'-'
 	MOV R11, #6
 	MOV R12, #6
+	MOV R10, #0
 
 	BL makeBoard
+match:
 	BL print
 	BL prompt
 	BL update
 	BL print
+	ADD R10, R10, #1
+	CMP R10, #3
+	BNE match
 
 	POP {LR}
 	BX LR
@@ -60,9 +67,9 @@ loop:
 swap:
 	PUSH {LR}
 	
-	MOV R10, R8
+	MOV R7, R8
 	MOV R8, R9
-	MOV R9, R10
+	MOV R9, R7
 
 	POP {LR}
 	BX LR
@@ -234,12 +241,32 @@ rowNum:
 prompt:
 	PUSH {LR}
 
+checks:
+	MOV R0, R10
+	MOV R1, #2
+	BL mod
+	MOV R1, R0
+	ADD R1, R1, #1
+	MOV R3, R1
+	LDR R0, address_player
+	BL printf
+
 	LDR R0, address_choicePrompt1
 	BL printf
 	LDR R0, address_format
 	LDR R1, address_choice
 	BL scanf
 	BL getIndex
+	
+	CMP R3, #1
+	BLEQ validSelect1
+	CMPEQ R1, #1
+	BEQ checks
+
+	CMP R3, #2
+	BLEQ validSelect2
+	CMP R1, #1
+	BEQ checks
 	PUSH {R0}
 
 	LDR R0, address_choicePrompt2
@@ -269,6 +296,43 @@ getIndex:
 	MUL R6, R3, R5
 	ADD R6, R6, R2
 	MOV R0, R6
+
+	POP {LR}
+	BX LR
+
+validSelect1:
+	PUSH {R5,LR}
+
+	ADD R5, R4, R0
+	LDRB R2, [R5]
+	CMP R2, #'*'
+	BLNE invalidSelect
+	MOVEQ R1, #0
+	MOVNE R1, #1
+
+	POP {R5,LR}
+	BX LR
+
+validSelect2:
+	PUSH {R5,LR}
+
+	LDR R4, address_a
+	ADD R5, R4, R0
+	LDRB R2, [R5]
+
+	CMP R2, #'o'
+	BLNE invalidSelect
+	MOVNE R1, #1
+	MOVEQ R1, #0
+
+	POP {R5,LR}
+	BX LR
+
+invalidSelect:
+	PUSH {LR}
+
+	LDR R0, address_invalid1
+	BL printf
 
 	POP {LR}
 	BX LR
@@ -312,3 +376,5 @@ address_formatd: .word formatd
 address_choicePrompt1: .word choicePrompt1
 address_choicePrompt2: .word choicePrompt2
 address_choice: .word choice
+address_player: .word player
+address_invalid1: .word invalid1
